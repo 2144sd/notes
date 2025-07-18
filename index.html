@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Supabase Notes App</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h2>📝 Supabase Notes</h2>
+
+  <input type="text" id="title" placeholder="Title" />
+  <br><br>
+  <textarea id="content" placeholder="Note content..."></textarea>
+  <br><br>
+  <button onclick="addNote()">➕ Add Note</button>
+  <button onclick="getNotes()">📑 All Notes</button>
+
+  <h3>Status:</h3>
+  <pre id="status">Waiting...</pre>
+
+  <h3>Notes:</h3>
+  <div id="notes"></div>
+
+  <script>
+    const supabaseUrl = 'https://nrmmjgnsdbnqzyuqtslo.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ybW1qZ25zZGJucXp5dXF0c2xvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTE3MzcsImV4cCI6MjA2ODQyNzczN30.izC4hAz4K2sDO1CLEWuA3E5bRh8FxIse9jtSPMJv-rw';
+
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function addNote() {
+      const title = document.getElementById("title").value;
+      const content = document.getElementById("content").value;
+
+      const { data, error } = await supabase.from('notes').insert([{ title, content }]);
+
+      if (error) {
+        document.getElementById("status").textContent = `❌ Error adding note: ${error.message}`;
+        console.error("Add Error:", error);
+      } else {
+        document.getElementById("status").textContent = `✅ Note added successfully!`;
+        console.log("Added Note:", data);
+        getNotes(); // refresh list
+      }
+    }
+
+    async function getNotes() {
+      const { data, error } = await supabase.from('notes').select('*').order('id', { ascending: false });
+
+      if (error) {
+        document.getElementById("status").textContent = `⚠️ Error fetching notes: ${error.message}`;
+        console.error("Fetch Error:", error);
+      } else {
+        document.getElementById("notes").innerHTML = data.map(note =>
+          `<div style="border:1px solid #aaa; padding:10px; margin:10px;">
+            <strong>${note.title}</strong><br>${note.content}
+          </div>`).join('');
+        document.getElementById("status").textContent = `✅ Loaded ${data.length} notes`;
+      }
+    }
+  </script>
+</body>
+</html>
