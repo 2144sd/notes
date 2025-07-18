@@ -1,62 +1,1204 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Supabase Notes App</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Places Viewer - Explore Amazing Destinations</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    header {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(15px);
+      padding: 20px 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo i {
+      color: #ffd700;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      position: relative;
+      padding: 8px 0;
+    }
+
+    .nav-links a:hover {
+      color: #ffd700;
+      transform: translateY(-2px);
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #ffd700, #ffed4a);
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* Main Content */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 50px 20px;
+    }
+
+    .hero-section {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: fadeInUp 1s ease-out;
+    }
+
+    .hero-title {
+      font-size: 56px;
+      font-weight: 700;
+      color: white;
+      text-shadow: 3px 3px 8px rgba(0,0,0,0.4);
+      margin-bottom: 15px;
+      letter-spacing: -1px;
+    }
+
+    .hero-subtitle {
+      font-size: 22px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+
+    .loading {
+      text-align: center;
+      color: white;
+      font-size: 20px;
+      padding: 60px;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #ffd700;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 30px;
+    }
+
+    /* Place Cards */
+    .places-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 35px;
+      margin-top: 40px;
+    }
+
+    .place-card {
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+      transition: all 0.4s ease;
+      animation: slideInUp 0.8s ease-out;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .place-card:hover {
+      transform: translateY(-15px);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.25);
+    }
+
+    .card-header {
+      position: relative;
+      height: 280px;
+      overflow: hidden;
+    }
+
+    .image-slideshow {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+
+    .slide.active {
+      opacity: 1;
+    }
+
+    .slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .slide img:hover {
+      transform: scale(1.05);
+    }
+
+    .slide-indicators {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .indicator.active {
+      background: #ffd700;
+      border-color: white;
+      transform: scale(1.2);
+    }
+
+    .slide-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+      z-index: 10;
+      backdrop-filter: blur(5px);
+    }
+
+    .slide-nav:hover {
+      background: rgba(0, 0, 0, 0.9);
+      transform: translateY(-50%) scale(1.1);
+      color: #ffd700;
+    }
+
+    .slide-nav.prev {
+      left: 20px;
+    }
+
+    .slide-nav.next {
+      right: 20px;
+    }
+
+    .card-content {
+      padding: 30px;
+    }
+
+    .place-name {
+      font-size: 26px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .place-name i {
+      color: #667eea;
+    }
+
+    .place-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #4a5568;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .info-item i {
+      color: #667eea;
+      width: 18px;
+      font-size: 16px;
+    }
+
+    .description {
+      background: linear-gradient(135deg, #f7fafc, #edf2f7);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      border-left: 4px solid #667eea;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .description p {
+      color: #4a5568;
+      margin: 0;
+      line-height: 1.7;
+    }
+
+    .price-tag {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 18px;
+      text-align: center;
+      margin-top: 20px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .price-tag:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Updated Modal for Gallery */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 2000;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal-content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-title i {
+      color: #ffd700;
+    }
+
+    .modal-close {
+      color: white;
+      font-size: 32px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: #ffd700;
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    .modal-gallery {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .modal-gallery::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .modal-gallery::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .modal-gallery::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    .modal-gallery::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .gallery-image {
+      max-width: 90%;
+      max-height: none;
+      width: auto;
+      height: auto;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: transform 0.3s ease;
+      cursor: zoom-in;
+    }
+
+    .gallery-image:hover {
+      transform: scale(1.02);
+    }
+
+    .gallery-image.zoomed {
+      max-width: 100%;
+      cursor: zoom-out;
+      transform: scale(1);
+    }
+
+    .image-counter {
+      position: absolute;
+      top: 20px;
+      right: 120px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      backdrop-filter: blur(5px);
+    }
+
+    /* About Modal */
+    .about-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 3000;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .about-modal-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .about-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .about-modal-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .about-modal-title i {
+      color: #ffd700;
+    }
+
+    .about-modal-close {
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .about-modal-close:hover {
+      color: #ffd700;
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    .about-content {
+      color: white;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    .about-name {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #ffd700;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .about-address {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .about-phone {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .phone-label {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 8px;
+    }
+
+    .phone-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffd700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: all;
+    }
+
+    .phone-number:hover {
+      transform: scale(1.05);
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+
+    .phone-number i {
+      font-size: 20px;
+    }
+
+    .copy-hint {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 10px;
+      font-style: italic;
+    }
+    footer {
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 60px;
+      backdrop-filter: blur(10px);
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-content p {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(60px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .nav-links {
+        gap: 25px;
+      }
+
+      .hero-title {
+        font-size: 42px;
+      }
+
+      .hero-subtitle {
+        font-size: 18px;
+      }
+
+      .places-grid {
+        grid-template-columns: 1fr;
+        gap: 25px;
+      }
+
+      .place-info {
+        grid-template-columns: 1fr;
+      }
+
+      .card-header {
+        height: 250px;
+      }
+
+      .modal-header {
+        padding: 15px;
+      }
+
+      .modal-title {
+        font-size: 20px;
+      }
+
+      .modal-close {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+      }
+
+      .image-counter {
+        right: 80px;
+        padding: 8px 15px;
+        font-size: 12px;
+      }
+
+      .gallery-image {
+        max-width: 95%;
+      }
+    }
+
+      .about-modal-content {
+        padding: 30px 25px;
+        max-width: 95%;
+      }
+
+      .about-modal-title {
+        font-size: 26px;
+      }
+
+      .about-name {
+        font-size: 24px;
+      }
+
+      .about-address {
+        font-size: 16px;
+      }
+
+      .phone-number {
+        font-size: 20px;
+      }
+
+      .about-modal-close {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+      }
+    
+
+    @media (max-width: 480px) {
+      .hero-title {
+        font-size: 32px;
+      }
+
+      .card-content {
+        padding: 25px;
+      }
+
+      .logo {
+        font-size: 26px;
+      }
+
+      .nav-links {
+        gap: 20px;
+      }
+
+      .nav-links a {
+        font-size: 14px;
+      }
+
+      .modal-gallery {
+        padding: 15px;
+      }
+
+      .modal-title {
+        font-size: 18px;
+      }
+
+      .image-counter {
+        right: 60px;
+        top: 15px;
+      }
+
+      .about-modal-content {
+        padding: 25px 20px;
+      }
+
+      .about-modal-title {
+        font-size: 22px;
+      }
+
+      .about-name {
+        font-size: 20px;
+      }
+
+      .about-address {
+        font-size: 15px;
+      }
+
+      .phone-number {
+        font-size: 18px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h2>📝 Supabase Notes</h2>
+  <header>
+    <div class="header-content">
+      <div class="logo">
+        <i class="fas fa-map-marker-alt"></i> Places Explorer
+      </div>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#" id="aboutBtn">About</a></li>
+          
+        </ul>
+      </nav>
+    </div>
+  </header>
 
-  <input type="text" id="title" placeholder="Title" />
-  <br><br>
-  <textarea id="content" placeholder="Note content..."></textarea>
-  <br><br>
-  <button onclick="addNote()">➕ Add Note</button>
-  <button onclick="getNotes()">📑 All Notes</button>
+  <main>
+    <section class="hero-section">
+      <h1 class="hero-title">Discover Amazing Places</h1>
+      <p class="hero-subtitle">Explore the world's most beautiful destinations</p>
+    </section>
 
-  <h3>Status:</h3>
-  <pre id="status">Waiting...</pre>
+    <div id="placesContainer">
+      <div class="loading">
+        <div class="spinner"></div>
+        Loading amazing places...
+      </div>
+    </div>
+  </main>
 
-  <h3>Notes:</h3>
-  <div id="notes"></div>
+  <div id="imageModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fas fa-images"></i>
+          <span id="modalPlaceName">Place Gallery</span>
+        </div>
+        <div class="image-counter">
+          <span id="imageCount">0 Images</span>
+        </div>
+        <span class="modal-close">&times;</span>
+      </div>
+      <div class="modal-gallery" id="modalGallery">
+        <!-- Images will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <div id="aboutModal" class="about-modal">
+    <div class="about-modal-content">
+      <div class="about-modal-header">
+        <div class="about-modal-title">
+          <i class="fas fa-user"></i>
+          About
+        </div>
+        <span class="about-modal-close">&times;</span>
+      </div>
+      <div class="about-content">
+        <div class="about-name">Salimbhai Aslambhai Changvadiya</div>
+        <div class="about-address">
+          Gathamgate, Palanpur 385001
+        </div>
+        <div class="about-phone">
+          <div class="phone-label">Contact Number:</div>
+          <div class="phone-number" onclick="copyPhoneNumber()">
+            <i class="fas fa-phone"></i>
+            7016859952
+          </div>
+          <div class="copy-hint">Click to copy number</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-content">
+      <p>&copy; 2025 Places Explorer. All rights reserved. Made with ❤️</p>
+    </div>
+  </footer>
 
   <script>
-    const supabaseUrl = 'https://nrmmjgnsdbnqzyuqtslo.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ybW1qZ25zZGJucXp5dXF0c2xvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTE3MzcsImV4cCI6MjA2ODQyNzczN30.izC4hAz4K2sDO1CLEWuA3E5bRh8FxIse9jtSPMJv-rw';
+    // Keep the same Supabase connection
+    const supabase = window.supabase.createClient(
+      'https://nrmmjgnsdbnqzyuqtslo.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ybW1qZ25zZGJucXp5dXF0c2xvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTE3MzcsImV4cCI6MjA2ODQyNzczN30.izC4hAz4K2sDO1CLEWuA3E5bRh8FxIse9jtSPMJv-rw'
+    );
 
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    // About Modal functionality
+    const aboutModal = document.getElementById('aboutModal');
+    const aboutBtn = document.getElementById('aboutBtn');
+    const aboutModalClose = document.querySelector('.about-modal-close');
 
-    async function addNote() {
-      const title = document.getElementById("title").value;
-      const content = document.getElementById("content").value;
-
-      const { data, error } = await supabase.from('notes').insert([{ title, content }]);
-
-      if (error) {
-        document.getElementById("status").textContent = `❌ Error adding note: ${error.message}`;
-        console.error("Add Error:", error);
-      } else {
-        document.getElementById("status").textContent = `✅ Note added successfully!`;
-        console.log("Added Note:", data);
-        getNotes(); // refresh list
-      }
+    function openAboutModal() {
+      aboutModal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
     }
 
-    async function getNotes() {
-      const { data, error } = await supabase.from('notes').select('*').order('id', { ascending: false });
-
-      if (error) {
-        document.getElementById("status").textContent = `⚠️ Error fetching notes: ${error.message}`;
-        console.error("Fetch Error:", error);
-      } else {
-        document.getElementById("notes").innerHTML = data.map(note =>
-          `<div style="border:1px solid #aaa; padding:10px; margin:10px;">
-            <strong>${note.title}</strong><br>${note.content}
-          </div>`).join('');
-        document.getElementById("status").textContent = `✅ Loaded ${data.length} notes`;
-      }
+    function closeAboutModal() {
+      aboutModal.style.display = 'none';
+      document.body.style.overflow = 'auto';
     }
+
+    // Copy phone number function
+    function copyPhoneNumber() {
+      const phoneNumber = '7016859952';
+      navigator.clipboard.writeText(phoneNumber).then(() => {
+        // Show success feedback
+        const phoneElement = document.querySelector('.phone-number');
+        const originalText = phoneElement.innerHTML;
+        phoneElement.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        phoneElement.style.color = '#4ade80';
+        
+        setTimeout(() => {
+          phoneElement.innerHTML = originalText;
+          phoneElement.style.color = '#ffd700';
+        }, 2000);
+      }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = phoneNumber;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        // Show success feedback
+        const phoneElement = document.querySelector('.phone-number');
+        const originalText = phoneElement.innerHTML;
+        phoneElement.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        phoneElement.style.color = '#4ade80';
+        
+        setTimeout(() => {
+          phoneElement.innerHTML = originalText;
+          phoneElement.style.color = '#ffd700';
+        }, 2000);
+      });
+    }
+
+    aboutBtn.onclick = function(e) {
+      e.preventDefault();
+      openAboutModal();
+    };
+
+    aboutModalClose.onclick = closeAboutModal;
+
+    aboutModal.onclick = function(e) {
+      if (e.target === aboutModal) {
+        closeAboutModal();
+      }
+    };
+
+    // Close about modal with Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && aboutModal.style.display === 'block') {
+        closeAboutModal();
+      }
+    });
+
+    // Modal functionality
+    const modal = document.getElementById('imageModal');
+    const modalGallery = document.getElementById('modalGallery');
+    const modalPlaceName = document.getElementById('modalPlaceName');
+    const imageCount = document.getElementById('imageCount');
+    const modalClose = document.querySelector('.modal-close');
+
+    function openModal(images, placeName) {
+      // Clear previous content
+      modalGallery.innerHTML = '';
+      
+      // Set place name and image count
+      modalPlaceName.textContent = placeName;
+      imageCount.textContent = `${images.length} Image${images.length > 1 ? 's' : ''}`;
+      
+      // Add all images to the gallery
+      images.forEach((imageSrc, index) => {
+        const img = document.createElement('img');
+        img.src = imageSrc;
+        img.alt = `${placeName} - Image ${index + 1}`;
+        img.className = 'gallery-image';
+        
+        // Add click to zoom functionality
+        img.onclick = function() {
+          this.classList.toggle('zoomed');
+        };
+        
+        modalGallery.appendChild(img);
+      });
+      
+      // Show modal
+      modal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      
+      // Reset scroll position
+      modalGallery.scrollTop = 0;
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    modalClose.onclick = closeModal;
+    modal.onclick = function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    };
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modal.style.display === 'block') {
+        closeModal();
+      }
+    });
+
+    // Slideshow functionality
+    function createSlideshow(container, images, placeName) {
+      if (!images || images.length === 0) return;
+
+      let currentSlide = 0;
+      let autoSlideInterval = null;
+      const slides = container.querySelectorAll('.slide');
+      const indicators = container.querySelectorAll('.indicator');
+      const prevBtn = container.querySelector('.slide-nav.prev');
+      const nextBtn = container.querySelector('.slide-nav.next');
+
+      // Set up click events for each image to open gallery
+      slides.forEach((slide) => {
+        const img = slide.querySelector('img');
+        if (img) {
+          img.onclick = function(e) {
+            e.stopPropagation();
+            openModal(images, placeName);
+          };
+        }
+      });
+
+      function showSlide(index) {
+        slides.forEach((slide, i) => {
+          slide.classList.toggle('active', i === index);
+        });
+        indicators.forEach((indicator, i) => {
+          indicator.classList.toggle('active', i === index);
+        });
+      }
+
+      function nextSlide() {
+        currentSlide = (currentSlide + 1) % images.length;
+        showSlide(currentSlide);
+      }
+
+      function prevSlide() {
+        currentSlide = (currentSlide - 1 + images.length) % images.length;
+        showSlide(currentSlide);
+      }
+
+      function startAutoSlide() {
+        if (autoSlideInterval) clearInterval(autoSlideInterval);
+        autoSlideInterval = setInterval(nextSlide, 8000);
+      }
+
+      function stopAutoSlide() {
+        if (autoSlideInterval) {
+          clearInterval(autoSlideInterval);
+          autoSlideInterval = null;
+        }
+      }
+
+      // Start auto-advance
+      startAutoSlide();
+
+      // Event listeners
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          stopAutoSlide();
+          nextSlide();
+          startAutoSlide();
+        };
+      }
+
+      if (prevBtn) {
+        prevBtn.onclick = () => {
+          stopAutoSlide();
+          prevSlide();
+          startAutoSlide();
+        };
+      }
+
+      indicators.forEach((indicator, index) => {
+        indicator.onclick = () => {
+          stopAutoSlide();
+          currentSlide = index;
+          showSlide(currentSlide);
+          startAutoSlide();
+        };
+      });
+
+      // Pause auto-advance on hover
+      container.onmouseenter = () => stopAutoSlide();
+      container.onmouseleave = () => startAutoSlide();
+    }
+
+    async function fetchPlaces() {
+      const { data, error } = await supabase.from('places').select('*');
+      const container = document.getElementById('placesContainer');
+      
+      if (error) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 60px; color: white;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 60px; margin-bottom: 25px; color: #ffd700;"></i>
+            <h2 style="font-size: 28px; margin-bottom: 15px;">Oops! Something went wrong</h2>
+            <p style="font-size: 18px; opacity: 0.9;">⚠️ ${error.message}</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (data.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 60px; color: white;">
+            <i class="fas fa-map-marker-alt" style="font-size: 60px; margin-bottom: 25px; color: #ffd700;"></i>
+            <h2 style="font-size: 28px; margin-bottom: 15px;">No places found</h2>
+            <p style="font-size: 18px; opacity: 0.9;">Check back later for amazing destinations!</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Create places grid
+      const placesGrid = document.createElement('div');
+      placesGrid.className = 'places-grid';
+
+      data.forEach((place, index) => {
+        const images = [place.image1base64, place.image2base64, place.image3base64].filter(Boolean);
+        
+        const card = document.createElement('div');
+        card.className = 'place-card';
+        card.style.animationDelay = `${index * 0.15}s`;
+
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="image-slideshow">
+              ${images.map((img, i) => `
+                <div class="slide ${i === 0 ? 'active' : ''}">
+                  <img src="${img}" alt="Place image ${i + 1}">
+                </div>
+              `).join('')}
+              
+              ${images.length > 1 ? `
+                <button class="slide-nav prev"><i class="fas fa-chevron-left"></i></button>
+                <button class="slide-nav next"><i class="fas fa-chevron-right"></i></button>
+                <div class="slide-indicators">
+                  ${images.map((_, i) => `
+                    <div class="indicator ${i === 0 ? 'active' : ''}"></div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="card-content">
+            <h2 class="place-name">
+              <i class="fas fa-map-pin"></i>
+              ${place.name}
+            </h2>
+            
+            <div class="place-info">
+              <div class="info-item">
+                <i class="fas fa-location-dot"></i>
+                <span>${place.location}</span>
+              </div>
+              <div class="info-item">
+                <i class="fas fa-walking"></i>
+                <span>${place.foot}</span>
+              </div>
+            </div>
+
+            <div class="description">
+              <p>${place.description}</p>
+            </div>
+
+            <div class="price-tag">
+              <i class="fas fa-tag"></i>
+              ${place.price}
+            </div>
+          </div>
+        `;
+
+        placesGrid.appendChild(card);
+
+        // Initialize slideshow if multiple images
+        if (images.length > 1) {
+          setTimeout(() => {
+            createSlideshow(card.querySelector('.image-slideshow'), images, place.name);
+          }, 100);
+        } else {
+          // For single image, add click event to open gallery
+          const img = card.querySelector('.slide img');
+          if (img) {
+            img.onclick = function(e) {
+              e.stopPropagation();
+              openModal(images, place.name);
+            };
+          }
+        }
+      });
+
+      container.innerHTML = '';
+      container.appendChild(placesGrid);
+    }
+
+    // Remove contact link functionality
+    document.querySelectorAll('a[href^="#contact"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        // Contact functionality can be added here if needed
+      });
+    });
+
+    // Initialize
+    fetchPlaces();
   </script>
 </body>
 </html>
